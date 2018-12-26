@@ -2,8 +2,21 @@ package com.roy.xform
 
 import java.util.UUID
 
-case class E(id: String, s: Int, e: Int)
+// event where start (s) is inclusive, end (e) is exclusive
+case class E(id: String, s: Int, e: Option[Int])
 
-object E{
-  def apply(s: Int, e: Int): E = E(UUID.randomUUID.toString, s, e)
+object E {
+  def apply(s: Int, e: Int): E = E(UUID.randomUUID.toString, s, Some(e))
 }
+
+//count of events at t
+case class EC(t: Int, count: Int)
+
+//time bound of type start or end
+case class B(t: Int, bt: String)
+
+//snapshot with id at t
+case class S(id: String, t: Int)
+
+//reference data at t
+case class R(t: Int, fk: String)

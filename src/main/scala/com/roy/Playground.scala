@@ -1,10 +1,11 @@
 package com.roy
 
-import com.roy.xform.E
-import org.apache.spark.sql.SparkSession
+import com.roy.xform.S
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{Dataset, SparkSession}
 
 object Playground extends App {
-  val spark: SparkSession = SparkSession
+  implicit val spark: SparkSession = SparkSession
     .builder
     .master("local[*]")
     .appName("PlaygroundApp")
@@ -15,9 +16,13 @@ object Playground extends App {
 
   import spark.implicits._
 
-  val es = Seq(E(1, 5), E(2, 6), E(3, 7), E(4, 8), E(5, 9)).toDS
+  val ss: Dataset[S] = Seq(S("a", 1), S("b", 2), S("b", 3), S("a", 4), S("a", 5), S("c", 7)).toDS
 
-  es.show()
+  ss.show()
+
+  ss.toEs
+    .orderBy(asc("s"))
+    .show
 
   spark.stop()
 }
