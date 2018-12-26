@@ -1,0 +1,3 @@
+# Scintilla
+Apache Spark playground
+
