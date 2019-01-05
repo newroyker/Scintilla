@@ -1,7 +1,6 @@
 package com.roy
 
-import com.roy.xform.S
-import org.apache.spark.sql.functions._
+import com.roy.xform.{R, S}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 object Playground extends App {
@@ -16,13 +15,13 @@ object Playground extends App {
 
   import spark.implicits._
 
-  val ss: Dataset[S] = Seq(S("a", 1), S("b", 2), S("b", 3), S("a", 4), S("a", 5), S("c", 7)).toDS
+  val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "a", 3), S(200, "b", 5), S(200, "b", 7))
+    .toDS
 
-  ss.show()
+  val rs: Dataset[R] = Seq(R(0, 100), R(2, 100), R(6, 200))
+    .toDS
 
-  ss.toEs
-    .orderBy(asc("s"))
-    .show
+  ss.asOfJoin(rs).show()
 
   spark.stop()
 }

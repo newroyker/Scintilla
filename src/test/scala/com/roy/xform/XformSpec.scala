@@ -24,7 +24,7 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
 
   "SOps" should "return Es" in {
 
-    val ss: Dataset[S] = Seq(S("a", 1), S("b", 2), S("b", 3), S("a", 4), S("a", 5), S("a", 6), S("c", 9))
+    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9))
       .toDS
 
     val es: Dataset[E] = ss
@@ -33,16 +33,32 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
     //es.explain()
 
     es.collect() must contain theSameElementsAs
-      Seq(E("a", 1, Some(2)), E("b", 2, Some(4)), E("a", 4, Some(9)), E("c", 9, None))
+      Seq(E(100, "a", 1, Some(2)), E(100, "b", 2, Some(4)), E(100, "a", 4, Some(9)), E(100, "c", 9, None))
+
+  }
+
+  it should "return Es even when they are not sorted" in {
+
+    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9))
+      .reverse
+      .toDS
+
+    val es: Dataset[E] = ss
+      .toEs
+
+    //es.explain()
+
+    es.collect() must contain theSameElementsAs
+      Seq(E(100, "a", 1, Some(2)), E(100, "b", 2, Some(4)), E(100, "a", 4, Some(9)), E(100, "c", 9, None))
 
   }
 
   it should "enrich Ss with Rs using as of join" in {
 
-    val ss: Dataset[S] = Seq(S("a", 1), S("a", 3), S("b", 5), S("b", 7))
+    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "a", 3), S(200, "b", 5), S(200, "b", 7))
       .toDS
 
-    val rs: Dataset[R] = Seq(R(0, "a"), R(2, "a"), R(6, "b"))
+    val rs: Dataset[R] = Seq(R(0, 100), R(2, 100), R(6, 200))
       .toDS
 
     val srs: Dataset[(S, Option[R])] = ss
@@ -51,7 +67,7 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
     //srs.explain()
 
     srs.collect() must contain theSameElementsAs
-      Seq((S("a", 1), Some(R(0, "a"))), (S("a", 3), Some(R(2, "a"))), (S("b", 5), None), (S("b", 7), Some(R(6, "b"))))
+      Seq((S(100, "a", 1), Some(R(0, 100))), (S(100, "a", 3), Some(R(2, 100))), (S(200, "b", 5), None), (S(200, "b", 7), Some(R(6, 200))))
 
   }
 }

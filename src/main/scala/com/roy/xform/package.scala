@@ -43,50 +43,38 @@ package object xform {
     def toEs(implicit spark: SparkSession): Dataset[E] = {
       import spark.implicits._
 
-      def getNext(sds: Dataset[S]): Dataset[(Int, Option[S])] = {
-        val ts: Dataset[Int] = sds
-          .map(_.t)
+      ss
+        .sort(ss("id"), ss("t"))
+        .groupByKey(s => s.id)
+        .flatMapGroups { (_, ss) =>
+          new Iterator[E] {
+            var nextStart: Option[S] = None
 
-        ts
-          .joinWith(
-            sds,
-            ts("value") < sds("t"),
-            "left_outer")
-          .map { case (l, r) => (l, Option(r)) }
-          .groupByKey { case (k, _) => k }
-          .reduceGroups { (x, y) =>
-            (x, y) match {
-              case ((_, Some(sx)), (_, Some(sy))) => if (sx.t < sy.t) x else y
-              case _ => y
+            override def hasNext: Boolean = ss.hasNext || nextStart.isDefined
+
+            override def next(): E = {
+              if (ss.hasNext) {
+                val start = nextStart.getOrElse(ss.next())
+                var last = start
+
+                while (last.state == start.state && ss.hasNext)
+                  last = ss.next()
+
+                if (last.state == start.state) {
+                  nextStart = None
+                  E(start.id, start.state, start.t, None)
+                } else {
+                  nextStart = Some(last)
+                  E(start.id, start.state, start.t, Some(last.t))
+                }
+              } else {
+                val Some(start) = nextStart
+                nextStart = None
+                E(start.id, start.state, start.t, None)
+              }
             }
           }
-          .map { case (_, r) => r }
-      }
-
-      val next: Dataset[(Int, Option[S])] = getNext(ss)
-
-      val redundant: Dataset[S] = ss
-        .joinWith(
-          next,
-          next("_1") === ss("t"))
-        .filter { r =>
-          r match {
-            case (a, (_, Some(b))) => a.id == b.id
-            case _ => false
-          }
         }
-        .map { case (_, (_, Some(s))) => s }
-
-      val cleanSS: Dataset[S] = ss
-        .except(redundant)
-
-      val newNext: Dataset[(Int, Option[S])] = getNext(cleanSS)
-
-      cleanSS
-        .joinWith(
-          newNext,
-          newNext("_1") === cleanSS("t"))
-        .map { case (a, (_, b)) => E(a.id, a.t, b.map(_.t)) }
     }
 
     def asOfJoin(rs: Dataset[R])(implicit spark: SparkSession): Dataset[(S, Option[R])] = {
@@ -94,18 +82,29 @@ package object xform {
 
       ss
         .joinWith(
-          rs,
-          ss("id") === rs("fk") && ss("t") >= rs("t"),
+          rs.sort(rs("fk"), rs("t")),
+          ss("id") === rs("fk"),
           "left_outer")
         .map { case (l, r) => (l, Option(r)) }
         .groupByKey { case (s, _) => s }
-        .reduceGroups { (x, y) =>
-          (x, y) match {
-            case ((_, Some(R(tx, _))), (_, Some(R(ty, _)))) => if (tx > ty) x else y
-            case _ => x
+        .flatMapGroups { (k, vs) =>
+          new Iterator[(S, Option[R])] {
+            private var didNotStart: Boolean = true
+
+            override def hasNext: Boolean = didNotStart
+
+            override def next(): (S, Option[R]) = {
+              didNotStart = false
+              vs
+                .find { case (l, rOpt) =>
+                  rOpt match {
+                    case Some(r) => l.t >= r.t
+                    case _ => false
+                  }
+                }.getOrElse((k, None))
+            }
           }
         }
-        .map { case (_, r) => r }
     }
   }
 
