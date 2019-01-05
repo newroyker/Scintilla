@@ -24,7 +24,7 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
 
   "SOps" should "return Es" in {
 
-    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9))
+    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9), S(100, "c", 11))
       .toDS
 
     val es: Dataset[E] = ss
@@ -39,7 +39,7 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
 
   it should "return Es even when they are not sorted" in {
 
-    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9))
+    val ss: Dataset[S] = Seq(S(100, "a", 1), S(100, "b", 2), S(100, "b", 3), S(100, "a", 4), S(100, "a", 5), S(100, "a", 6), S(100, "c", 9), S(100, "c", 11))
       .reverse
       .toDS
 
