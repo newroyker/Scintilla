@@ -4,6 +4,36 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 
 package object xform {
 
+  implicit class AOps(as: Dataset[A]) {
+    def -(otherAs: Dataset[A])(implicit spark: SparkSession): Dataset[A] = {
+      import spark.implicits._
+
+      as
+        .joinWith(otherAs, as("id") === otherAs("id"), "left_outer")
+        .map { case (l, r) => (l, Option(r).isEmpty) }
+        .filter(_._2)
+        .map(_._1)
+    }
+
+    //lets pretend codes seq is quite big
+    def codeNotInBig(cs: Seq[String])(implicit spark: SparkSession): Dataset[A] = {
+      import spark.implicits._
+      val cds: Dataset[String] = cs.toDS
+
+      as.joinWith(cds, as("code") === cds("value"), "left_outer")
+        .map { case (l, r) => (l, Option(r).isEmpty) }
+        .filter(_._2)
+        .map(_._1)
+    }
+
+    //lets pretend codes seq is quite small
+    def codeNotInSmall(cs: Seq[String]): Dataset[A] = {
+      val css = cs.toSet
+
+      as.filter(a => !css.contains(a.code))
+    }
+  }
+
   implicit class EOps(es: Dataset[E]) {
 
     def counts(implicit spark: SparkSession): Dataset[EC] = {

@@ -20,3 +20,6 @@ case class S(id: Int, state: String, t: Int)
 
 //reference data at t
 case class R(t: Int, fk: Int)
+
+//A row with id and code
+case class A(id: Int, code: String)

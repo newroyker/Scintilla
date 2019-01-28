@@ -70,4 +70,37 @@ class XformSpec extends FlatSpec with MustMatchers with SparkSupport {
       Seq((S(100, "a", 1), Some(R(0, 100))), (S(100, "a", 3), Some(R(2, 100))), (S(200, "b", 5), None), (S(200, "b", 7), Some(R(6, 200))))
 
   }
+
+  "AOps" should "be able to find differences between two data sets" in {
+    val as: Dataset[A] = Seq(A(1, "A"), A(2, "B"), A(3, "C"), A(4, "D")).toDS()
+
+    val otherAs: Dataset[A] = Seq(A(1, "A"), A(3, "C")).toDS()
+
+    val d: Dataset[A] = as - otherAs
+
+    d.collect() must contain theSameElementsAs
+      Seq(A(2, "B"), A(4, "D"))
+  }
+
+  it should "be able to mimic not-in BIG version" in {
+    val as: Dataset[A] = Seq(A(1, "A"), A(2, "B"), A(3, "C"), A(4, "D")).toDS()
+
+    val codes: Seq[String] = Seq("B", "C")
+
+    val d: Dataset[A] = as.codeNotInBig(codes)
+
+    d.collect() must contain theSameElementsAs
+      Seq(A(1, "A"), A(4, "D"))
+  }
+
+  it should "be able to mimic not-in SMALL version" in {
+    val as: Dataset[A] = Seq(A(1, "A"), A(2, "B"), A(3, "C"), A(4, "D")).toDS()
+
+    val codes: Seq[String] = Seq("B", "C")
+
+    val d: Dataset[A] = as.codeNotInSmall(codes)
+
+    d.collect() must contain theSameElementsAs
+      Seq(A(1, "A"), A(4, "D"))
+  }
 }
